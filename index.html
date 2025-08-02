@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Taxi Booking - Select Locations</title>
+  <title>Taxi Booking - Distance Pricing</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDLyQK5Mh-Y6DkfhLY9cjLyuDSzsi4vSjY&libraries=places"></script>
   <style>
@@ -156,6 +156,13 @@
       box-shadow: 0 6px 15px rgba(37, 211, 102, 0.4);
     }
     
+    .btn:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
     .map-container {
       height: 250px;
       border-radius: 12px;
@@ -200,6 +207,22 @@
       font-size: 0.9rem;
     }
     
+    .distance-info {
+      text-align: center;
+      margin: 15px 0;
+      font-size: 0.9rem;
+      color: #495057;
+      padding: 8px;
+      background: #e9ecef;
+      border-radius: 8px;
+      display: none;
+    }
+    
+    .distance-info span {
+      font-weight: bold;
+      color: #25D366;
+    }
+    
     .loader {
       display: none;
       position: fixed;
@@ -235,45 +258,6 @@
       100% { transform: rotate(360deg); }
     }
     
-    .confirmation {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.7);
-      z-index: 2000;
-      justify-content: center;
-      align-items: center;
-    }
-    
-    .confirmation-content {
-      background: white;
-      padding: 30px;
-      border-radius: 15px;
-      text-align: center;
-      max-width: 90%;
-      width: 400px;
-    }
-    
-    .confirmation-content i {
-      font-size: 4rem;
-      color: #25D366;
-      margin-bottom: 20px;
-    }
-    
-    .confirmation-content h2 {
-      margin-bottom: 15px;
-      color: #25D366;
-    }
-    
-    .confirmation-content p {
-      margin-bottom: 25px;
-      font-size: 1.1rem;
-      line-height: 1.6;
-    }
-    
     @media (max-width: 480px) {
       .header h2 {
         font-size: 1.5rem;
@@ -303,10 +287,6 @@
       
       .map-container {
         height: 200px;
-      }
-      
-      .confirmation-content {
-        padding: 20px;
       }
     }
   </style>
@@ -338,8 +318,12 @@
         <input type="text" id="dropInput" class="location-input" placeholder="Enter drop location">
       </div>
       
-      <button class="btn" id="submitBtn">
-        <i class="fas fa-paper-plane"></i> Confirm Booking
+      <div class="distance-info" id="distanceInfo">
+        Estimated distance: <span id="distance">0</span> km
+      </div>
+      
+      <button class="btn" id="whatsappBtn" disabled>
+        <i class="fab fa-whatsapp"></i> Send to WhatsApp
       </button>
       
       <div class="map-container">
@@ -350,9 +334,10 @@
         <h3><i class="fas fa-info-circle"></i> How it works</h3>
         <ul>
           <li>Enter your pickup and drop locations</li>
-          <li>Locations will be shown on the map</li>
-          <li>Click "Confirm Booking" to submit your request</li>
-          <li>We'll send a WhatsApp confirmation to your phone</li>
+          <li>Distance will be calculated automatically</li>
+          <li>Click the button to open WhatsApp with your details</li>
+          <li>You'll see prices for both SUV and Sedan in WhatsApp</li>
+          <li>Select your car type in WhatsApp to complete booking</li>
         </ul>
       </div>
     </div>
@@ -365,45 +350,20 @@
   <div class="loader" id="loader">
     <div class="loader-content">
       <div class="spinner"></div>
-      <h3>Processing Your Booking...</h3>
-      <p>Sending details to our dispatch system</p>
-    </div>
-  </div>
-
-  <div class="confirmation" id="confirmation">
-    <div class="confirmation-content">
-      <i class="fas fa-check-circle"></i>
-      <h2>Booking Confirmed!</h2>
-      <p>Your taxi booking details have been successfully submitted.</p>
-      <p>We're sending a WhatsApp confirmation to your phone number now.</p>
-      <p>Your driver will contact you shortly.</p>
-      <button class="btn" onclick="document.getElementById('confirmation').style.display = 'none'">
-        <i class="fas fa-times"></i> Close
-      </button>
+      <h3>Calculating Distance...</h3>
+      <p>Please wait while we calculate the best route</p>
     </div>
   </div>
 
   <script>
-    // Global variables to store place details
+    // Global variables
     let selectedPickup = null;
     let selectedDrop = null;
     let map, pickupMarker, dropMarker, directionsRenderer;
-    let userPhone = "";
-    
-    // Get user phone from URL
-    function getUserFromURL() {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('user');
-    }
+    let currentDistance = 0;
     
     // Initialize Google Maps Autocomplete
     function initAutocomplete() {
-      userPhone = getUserFromURL();
-      if (!userPhone) {
-        alert("User phone number is missing from URL. Please access via the correct link.");
-        return;
-      }
-      
       const pickupInput = document.getElementById('pickupInput');
       const dropInput = document.getElementById('dropInput');
       
@@ -460,15 +420,6 @@
         if (!place.geometry) return;
         
         selectedPickup = place;
-        
-        if (place.geometry.viewport) {
-          map.fitBounds(place.geometry.viewport);
-        } else {
-          map.setCenter(place.geometry.location);
-          map.setZoom(15);
-        }
-        
-        pickupMarker.setPosition(place.geometry.location);
         updateRoute();
       });
       
@@ -477,15 +428,6 @@
         if (!place.geometry) return;
         
         selectedDrop = place;
-        
-        if (place.geometry.viewport) {
-          map.fitBounds(place.geometry.viewport);
-        } else {
-          map.setCenter(place.geometry.location);
-          map.setZoom(15);
-        }
-        
-        dropMarker.setPosition(place.geometry.location);
         updateRoute();
       });
       
@@ -505,25 +447,20 @@
         selectedPickup = selectedDrop;
         selectedDrop = tempPlace;
         
-        // Update markers
-        if (selectedPickup) {
-          pickupMarker.setPosition(selectedPickup.geometry.location);
-        }
-        if (selectedDrop) {
-          dropMarker.setPosition(selectedDrop.geometry.location);
-        }
-        
         // Update route
         updateRoute();
       });
       
-      // Submit button
-      document.getElementById('submitBtn').addEventListener('click', submitBooking);
+      // WhatsApp button
+      document.getElementById('whatsappBtn').addEventListener('click', sendToWhatsApp);
     }
     
-    // Update route on map
+    // Update route on map and calculate distance
     function updateRoute() {
       if (selectedPickup && selectedDrop) {
+        // Show loader
+        document.getElementById('loader').style.display = 'flex';
+        
         const directionsService = new google.maps.DirectionsService();
         
         const request = {
@@ -533,75 +470,73 @@
         };
         
         directionsService.route(request, function(result, status) {
+          // Hide loader
+          document.getElementById('loader').style.display = 'none';
+          
           if (status == 'OK') {
             directionsRenderer.setDirections(result);
+            
+            // Get distance
+            const route = result.routes[0];
+            const distanceMeters = route.legs[0].distance.value;
+            currentDistance = distanceMeters / 1000; // Convert to km
+            
+            // Update UI
+            document.getElementById('distance').textContent = currentDistance.toFixed(1);
+            document.getElementById('distanceInfo').style.display = 'block';
+            
+            // Enable WhatsApp button
+            document.getElementById('whatsappBtn').disabled = false;
+            
+            // Update map view
+            map.fitBounds(route.legs[0].start_location, route.legs[0].end_location);
+          } else {
+            alert("Could not calculate distance. Please try again.");
+            document.getElementById('distanceInfo').style.display = 'none';
+            document.getElementById('whatsappBtn').disabled = true;
           }
         });
+      } else {
+        // Hide distance info if locations are incomplete
+        document.getElementById('distanceInfo').style.display = 'none';
+        document.getElementById('whatsappBtn').disabled = true;
       }
     }
     
-    // Submit booking to backend
-    function submitBooking() {
-    const pickup = document.getElementById("pickupInput").value;
-    const drop = document.getElementById("dropInput").value;
-    
-    if (!pickup || !drop) {
+    // Send to WhatsApp with prices
+    function sendToWhatsApp() {
+      const pickup = document.getElementById("pickupInput").value;
+      const drop = document.getElementById("dropInput").value;
+      
+      if (!pickup || !drop) {
         alert("Please enter both pickup and drop locations.");
         return;
+      }
+      
+      // Calculate prices
+      const sedanPrice = Math.round(currentDistance * 20);
+      const suvPrice = Math.round(currentDistance * 25);
+      
+      // Create WhatsApp message
+      const message = `🚕 *Taxi Booking Request* 🚕%0A%0A` +
+        `*Pickup Location:*%0A${pickup}%0A%0A` +
+        `*Drop Location:*%0A${drop}%0A%0A` +
+        `*Distance:* ${currentDistance.toFixed(1)} km%0A%0A` +
+        `*Price Estimates:*%0A` +
+        `1. Sedan: ₹${sedanPrice} (₹20 per km)%0A` +
+        `2. SUV: ₹${suvPrice} (₹25 per km)%0A%0A` +
+        `*Please select your car type:*%0A` +
+        `Reply with:%0A` +
+        `1 for Sedan%0A` +
+        `2 for SUV%0A%0A` +
+        `Thank you for choosing our service!`;
+      
+      // Create WhatsApp URL
+      const whatsappURL = `https://5c1dd34512a0.ngrok-free.app/submit_booking`;
+      
+      // Open WhatsApp in a new tab
+      window.open(whatsappURL, "_blank");
     }
-    
-    // Show loader
-    document.getElementById('loader').style.display = 'flex';
-    
-    // Prepare booking data
-    const bookingData = {
-        user: userPhone,
-        pickup: pickup,
-        drop: drop,
-        pickup_coords: selectedPickup ? 
-            `${selectedPickup.geometry.location.lat()},${selectedPickup.geometry.location.lng()}` : "",
-        drop_coords: selectedDrop ? 
-            `${selectedDrop.geometry.location.lat()},${selectedDrop.geometry.location.lng()}` : ""
-    };
-    
-    console.log("Sending booking data:", bookingData);
-    
-    // Make API call to backend
-    fetch('https://5c1dd34512a0.ngrok-free.app/submit_booking', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(bookingData)
-    })
-    .then(response => {
-        if (!response.ok) {
-            // Try to get error message from response
-            return response.json().then(errorData => {
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-            }).catch(() => {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        // Hide loader
-        document.getElementById('loader').style.display = 'none';
-        
-        if (data.status === "success") {
-            // Show confirmation
-            document.getElementById('confirmation').style.display = 'flex';
-        } else {
-            alert("Booking failed: " + (data.message || "Unknown error"));
-        }
-    })
-    .catch(error => {
-        document.getElementById('loader').style.display = 'none';
-        console.error("Fetch error:", error);
-        alert("Error submitting booking: " + error.message);
-    });
-}
     
     // Initialize when page loads
     window.onload = function() {
