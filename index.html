@@ -564,6 +564,8 @@
             `${selectedDrop.geometry.location.lat()},${selectedDrop.geometry.location.lng()}` : ""
     };
     
+    console.log("Sending booking data:", bookingData);
+    
     // Make API call to backend
     fetch('https://5c1dd34512a0.ngrok-free.app/submit_booking', {
         method: 'POST',
@@ -574,7 +576,12 @@
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            // Try to get error message from response
+            return response.json().then(errorData => {
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }).catch(() => {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            });
         }
         return response.json();
     })
@@ -591,6 +598,7 @@
     })
     .catch(error => {
         document.getElementById('loader').style.display = 'none';
+        console.error("Fetch error:", error);
         alert("Error submitting booking: " + error.message);
     });
 }
