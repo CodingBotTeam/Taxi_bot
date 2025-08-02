@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taxi Booking Location Picker</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDLyQK5Mh-Y6DkfhLY9cjLyuDSzsi4vSjY&libraries=places"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #333;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      width: 100%;
+      max-width: 500px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+    
+    .header {
+      background: #25D366;
+      color: white;
+      text-align: center;
+      padding: 25px 20px;
+      position: relative;
+    }
+    
+    .header h2 {
+      font-size: 1.8rem;
+      margin-bottom: 5px;
+    }
+    
+    .header p {
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+    
+    .taxi-icon {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 2rem;
+    }
+    
+    .content {
+      padding: 25px;
+    }
+    
+    .input-group {
+      margin-bottom: 25px;
+      position: relative;
+    }
+    
+    .input-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #2d3748;
+      font-size: 1.1rem;
+    }
+    
+    .input-group i {
+      position: absolute;
+      left: 15px;
+      top: 45px;
+      color: #25D366;
+      font-size: 1.2rem;
+    }
+    
+    .location-input {
+      width: 100%;
+      padding: 15px 15px 15px 45px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+    
+    .location-input:focus {
+      border-color: #25D366;
+      box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.2);
+    }
+    
+    .switch-btn {
+      background: #edf2f7;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 5px auto 15px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .switch-btn:hover {
+      background: #e2e8f0;
+      transform: rotate(180deg);
+    }
+    
+    .switch-btn i {
+      color: #25D366;
+      font-size: 1.2rem;
+    }
+    
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      background: #25D366;
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .btn:hover {
+      background: #128C7E;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(37, 211, 102, 0.4);
+    }
+    
+    .map-container {
+      height: 250px;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 25px;
+      border: 1px solid #e2e8f0;
+    }
+    
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .info-box {
+      background: #edf2f7;
+      border-radius: 12px;
+      padding: 15px;
+      margin-top: 25px;
+      font-size: 0.9rem;
+    }
+    
+    .info-box h3 {
+      margin-bottom: 10px;
+      color: #25D366;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      color: #718096;
+      font-size: 0.9rem;
+    }
+    
+    @media (max-width: 480px) {
+      .header h2 {
+        font-size: 1.5rem;
+      }
+      
+      .header {
+        padding: 20px 15px;
+      }
+      
+      .content {
+        padding: 20px;
+      }
+      
+      .location-input {
+        padding: 12px 12px 12px 40px;
+        font-size: 0.95rem;
+      }
+      
+      .input-group i {
+        top: 40px;
+        font-size: 1.1rem;
+      }
+      
+      .btn {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Taxi Booking Location Picker</h2>
+      <p>Select your pickup and drop locations</p>
+      <div class="taxi-icon">
+        <i class="fas fa-taxi"></i>
+      </div>
+    </div>
+    
+    <div class="content">
+      <div class="input-group">
+        <label for="pickupInput">Pickup Location:</label>
+        <i class="fas fa-map-marker-alt"></i>
+        <input type="text" id="pickupInput" class="location-input" placeholder="Enter pickup location">
+      </div>
+      
+      <button class="switch-btn" id="switchBtn">
+        <i class="fas fa-exchange-alt"></i>
+      </button>
+      
+      <div class="input-group">
+        <label for="dropInput">Drop Location:</label>
+        <i class="fas fa-flag-checkered"></i>
+        <input type="text" id="dropInput" class="location-input" placeholder="Enter drop location">
+      </div>
+      
+      <button class="btn" onclick="sendToWhatsApp()">
+        <i class="fab fa-whatsapp"></i> Send to WhatsApp
+      </button>
+      
+      <div class="map-container">
+        <div id="map"></div>
+      </div>
+      
+      <div class="info-box">
+        <h3><i class="fas fa-info-circle"></i> How it works</h3>
+        <p>1. Enter your pickup and drop locations</p>
+        <p>2. Locations will be shown on the map</p>
+        <p>3. Click "Send to WhatsApp" to book your taxi</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <p>© 2023 Taxi Booking Service. All rights reserved.</p>
+  </div>
+
+  <script>
+    // Initialize Google Maps Autocomplete
+    function initAutocomplete() {
+      const pickupInput = document.getElementById('pickupInput');
+      const dropInput = document.getElementById('dropInput');
+      
+      const pickupAutocomplete = new google.maps.places.Autocomplete(pickupInput);
+      const dropAutocomplete = new google.maps.places.Autocomplete(dropInput);
+      
+      // Initialize map
+      const map = new google.maps.Map(document.getElementById('map'), {
+        center: {lat: 0, lng: 0},
+        zoom: 2,
+        mapTypeControl: false,
+        streetViewControl: false
+      });
+      
+      // Add markers
+      const pickupMarker = new google.maps.Marker({
+        map: map,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#25D366",
+          fillOpacity: 1,
+          strokeColor: "#FFF",
+          strokeWeight: 2
+        }
+      });
+      
+      const dropMarker = new google.maps.Marker({
+        map: map,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#FF5252",
+          fillOpacity: 1,
+          strokeColor: "#FFF",
+          strokeWeight: 2
+        }
+      });
+      
+      // Listen for place changes
+      pickupAutocomplete.addListener('place_changed', function() {
+        const place = pickupAutocomplete.getPlace();
+        if (!place.geometry) return;
+        
+        if (place.geometry.viewport) {
+          map.fitBounds(place.geometry.viewport);
+        } else {
+          map.setCenter(place.geometry.location);
+          map.setZoom(15);
+        }
+        
+        pickupMarker.setPosition(place.geometry.location);
+        updateRoute();
+      });
+      
+      dropAutocomplete.addListener('place_changed', function() {
+        const place = dropAutocomplete.getPlace();
+        if (!place.geometry) return;
+        
+        if (place.geometry.viewport) {
+          map.fitBounds(place.geometry.viewport);
+        } else {
+          map.setCenter(place.geometry.location);
+          map.setZoom(15);
+        }
+        
+        dropMarker.setPosition(place.geometry.location);
+        updateRoute();
+      });
+      
+      // Switch locations
+      document.getElementById('switchBtn').addEventListener('click', function() {
+        const pickupValue = pickupInput.value;
+        const dropValue = dropInput.value;
+        
+        pickupInput.value = dropValue;
+        dropInput.value = pickupValue;
+        
+        // Trigger place change events
+        if (pickupValue) {
+          const event = new Event('input', { bubbles: true });
+          pickupInput.dispatchEvent(event);
+        }
+        
+        if (dropValue) {
+          const event = new Event('input', { bubbles: true });
+          dropInput.dispatchEvent(event);
+        }
+      });
+      
+      // Update route on map
+      function updateRoute() {
+        const pickupPlace = pickupAutocomplete.getPlace();
+        const dropPlace = dropAutocomplete.getPlace();
+        
+        if (pickupPlace && pickupPlace.geometry && dropPlace && dropPlace.geometry) {
+          const directionsService = new google.maps.DirectionsService();
+          const directionsRenderer = new google.maps.DirectionsRenderer({
+            map: map,
+            suppressMarkers: true,
+            polylineOptions: {
+              strokeColor: '#25D366',
+              strokeOpacity: 0.7,
+              strokeWeight: 5
+            }
+          });
+          
+          const request = {
+            origin: pickupPlace.geometry.location,
+            destination: dropPlace.geometry.location,
+            travelMode: 'DRIVING'
+          };
+          
+          directionsService.route(request, function(result, status) {
+            if (status == 'OK') {
+              directionsRenderer.setDirections(result);
+            }
+          });
+        }
+      }
+    }
+    
+    // Initialize when page loads
+    window.onload = function() {
+      initAutocomplete();
+    };
+    
+    // Send to WhatsApp
+    function sendToWhatsApp() {
+      const pickup = document.getElementById("pickupInput").value;
+      const drop = document.getElementById("dropInput").value;
+      
+      if (!pickup || !drop) {
+        alert("Please enter both pickup and drop locations.");
+        return;
+      }
+      
+      const message = `Taxi Booking Request:%0A%0A🚕 *Pickup Location*:%0A${pickup}%0A%0A🏁 *Drop Location*:%0A${drop}%0A%0APlease confirm my booking. Thank you!`;
+      const whatsappURL = `https://wa.me/+14155238886?text=${message}`;
+      
+      window.open(whatsappURL, "_blank");
+    }
+  </script>
+</body>
+</html>
