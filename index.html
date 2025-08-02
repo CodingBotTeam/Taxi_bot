@@ -385,229 +385,262 @@
 
   <script>
     // Global variables to store place details
-    let selectedPickup = null;
-    let selectedDrop = null;
-    let map, pickupMarker, dropMarker, directionsRenderer;
-    let userPhone = "";
+let selectedPickup = null;
+let selectedDrop = null;
+let map, pickupMarker, dropMarker, directionsRenderer;
+let userPhone = "";
+let currentDistance = 0; // Store the calculated distance
+
+// Get user phone from URL
+function getUserFromURL() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('user');
+}
+
+// Initialize Google Maps Autocomplete
+function initAutocomplete() {
+  userPhone = getUserFromURL();
+  if (!userPhone) {
+    alert("User phone number is missing from URL. Please access via the correct link.");
+    return;
+  }
+  
+  const pickupInput = document.getElementById('pickupInput');
+  const dropInput = document.getElementById('dropInput');
+  
+  const pickupAutocomplete = new google.maps.places.Autocomplete(pickupInput);
+  const dropAutocomplete = new google.maps.places.Autocomplete(dropInput);
+  
+  // Initialize map
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: {lat: 0, lng: 0},
+    zoom: 2,
+    mapTypeControl: false,
+    streetViewControl: false
+  });
+  
+  // Initialize directions renderer
+  directionsRenderer = new google.maps.DirectionsRenderer({
+    map: map,
+    suppressMarkers: true,
+    polylineOptions: {
+      strokeColor: '#25D366',
+      strokeOpacity: 0.7,
+      strokeWeight: 5
+    }
+  });
+  
+  // Add markers
+  pickupMarker = new google.maps.Marker({
+    map: map,
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 8,
+      fillColor: "#25D366",
+      fillOpacity: 1,
+      strokeColor: "#FFF",
+      strokeWeight: 2
+    }
+  });
+  
+  dropMarker = new google.maps.Marker({
+    map: map,
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 8,
+      fillColor: "#FF5252",
+      fillOpacity: 1,
+      strokeColor: "#FFF",
+      strokeWeight: 2
+    }
+  });
+  
+  // Listen for place changes
+  pickupAutocomplete.addListener('place_changed', function() {
+    const place = pickupAutocomplete.getPlace();
+    if (!place.geometry) return;
     
-    // Get user phone from URL
-    function getUserFromURL() {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('user');
+    selectedPickup = place;
+    
+    if (place.geometry.viewport) {
+      map.fitBounds(place.geometry.viewport);
+    } else {
+      map.setCenter(place.geometry.location);
+      map.setZoom(15);
     }
     
-    // Initialize Google Maps Autocomplete
-    function initAutocomplete() {
-      userPhone = getUserFromURL();
-      if (!userPhone) {
-        alert("User phone number is missing from URL. Please access via the correct link.");
-        return;
-      }
-      
-      const pickupInput = document.getElementById('pickupInput');
-      const dropInput = document.getElementById('dropInput');
-      
-      const pickupAutocomplete = new google.maps.places.Autocomplete(pickupInput);
-      const dropAutocomplete = new google.maps.places.Autocomplete(dropInput);
-      
-      // Initialize map
-      map = new google.maps.Map(document.getElementById('map'), {
-        center: {lat: 0, lng: 0},
-        zoom: 2,
-        mapTypeControl: false,
-        streetViewControl: false
-      });
-      
-      // Initialize directions renderer
-      directionsRenderer = new google.maps.DirectionsRenderer({
-        map: map,
-        suppressMarkers: true,
-        polylineOptions: {
-          strokeColor: '#25D366',
-          strokeOpacity: 0.7,
-          strokeWeight: 5
-        }
-      });
-      
-      // Add markers
-      pickupMarker = new google.maps.Marker({
-        map: map,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: "#25D366",
-          fillOpacity: 1,
-          strokeColor: "#FFF",
-          strokeWeight: 2
-        }
-      });
-      
-      dropMarker = new google.maps.Marker({
-        map: map,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: "#FF5252",
-          fillOpacity: 1,
-          strokeColor: "#FFF",
-          strokeWeight: 2
-        }
-      });
-      
-      // Listen for place changes
-      pickupAutocomplete.addListener('place_changed', function() {
-        const place = pickupAutocomplete.getPlace();
-        if (!place.geometry) return;
-        
-        selectedPickup = place;
-        
-        if (place.geometry.viewport) {
-          map.fitBounds(place.geometry.viewport);
-        } else {
-          map.setCenter(place.geometry.location);
-          map.setZoom(15);
-        }
-        
-        pickupMarker.setPosition(place.geometry.location);
-        updateRoute();
-      });
-      
-      dropAutocomplete.addListener('place_changed', function() {
-        const place = dropAutocomplete.getPlace();
-        if (!place.geometry) return;
-        
-        selectedDrop = place;
-        
-        if (place.geometry.viewport) {
-          map.fitBounds(place.geometry.viewport);
-        } else {
-          map.setCenter(place.geometry.location);
-          map.setZoom(15);
-        }
-        
-        dropMarker.setPosition(place.geometry.location);
-        updateRoute();
-      });
-      
-      // Switch locations
-      document.getElementById('switchBtn').addEventListener('click', function() {
-        const pickupInput = document.getElementById('pickupInput');
-        const dropInput = document.getElementById('dropInput');
-        const pickupValue = pickupInput.value;
-        const dropValue = dropInput.value;
-        
-        // Swap values
-        pickupInput.value = dropValue;
-        dropInput.value = pickupValue;
-        
-        // Swap place objects
-        const tempPlace = selectedPickup;
-        selectedPickup = selectedDrop;
-        selectedDrop = tempPlace;
-        
-        // Update markers
-        if (selectedPickup) {
-          pickupMarker.setPosition(selectedPickup.geometry.location);
-        }
-        if (selectedDrop) {
-          dropMarker.setPosition(selectedDrop.geometry.location);
-        }
-        
-        // Update route
-        updateRoute();
-      });
-      
-      // Submit button
-      document.getElementById('submitBtn').addEventListener('click', submitBooking);
+    pickupMarker.setPosition(place.geometry.location);
+    updateRoute();
+  });
+  
+  dropAutocomplete.addListener('place_changed', function() {
+    const place = dropAutocomplete.getPlace();
+    if (!place.geometry) return;
+    
+    selectedDrop = place;
+    
+    if (place.geometry.viewport) {
+      map.fitBounds(place.geometry.viewport);
+    } else {
+      map.setCenter(place.geometry.location);
+      map.setZoom(15);
     }
     
-    // Update route on map
-    function updateRoute() {
-      if (selectedPickup && selectedDrop) {
-        const directionsService = new google.maps.DirectionsService();
-        
-        const request = {
-          origin: selectedPickup.geometry.location,
-          destination: selectedDrop.geometry.location,
-          travelMode: 'DRIVING'
-        };
-        
-        directionsService.route(request, function(result, status) {
-          if (status == 'OK') {
-            directionsRenderer.setDirections(result);
-          }
-        });
-      }
+    dropMarker.setPosition(place.geometry.location);
+    updateRoute();
+  });
+  
+  // Switch locations
+  document.getElementById('switchBtn').addEventListener('click', function() {
+    const pickupInput = document.getElementById('pickupInput');
+    const dropInput = document.getElementById('dropInput');
+    const pickupValue = pickupInput.value;
+    const dropValue = dropInput.value;
+    
+    // Swap values
+    pickupInput.value = dropValue;
+    dropInput.value = pickupValue;
+    
+    // Swap place objects
+    const tempPlace = selectedPickup;
+    selectedPickup = selectedDrop;
+    selectedDrop = tempPlace;
+    
+    // Update markers
+    if (selectedPickup) {
+      pickupMarker.setPosition(selectedPickup.geometry.location);
+    }
+    if (selectedDrop) {
+      dropMarker.setPosition(selectedDrop.geometry.location);
     }
     
-    // Submit booking to backend
-    // Submit booking to backend
-function submitBooking() {
-    const pickup = document.getElementById("pickupInput").value;
-    const drop = document.getElementById("dropInput").value;
-    
-    if (!pickup || !drop) {
-        alert("Please enter both pickup and drop locations.");
-        return;
-    }
-    
-    // Show loader
+    // Update route
+    updateRoute();
+  });
+  
+  // Submit button
+  document.getElementById('submitBtn').addEventListener('click', submitBooking);
+}
+
+// Update route on map and calculate distance
+function updateRoute() {
+  if (selectedPickup && selectedDrop) {
+    // Show loader while calculating
     document.getElementById('loader').style.display = 'flex';
     
-    // Prepare booking data
-    const bookingData = {
-        user: userPhone,
-        pickup: pickup,
-        drop: drop,
-        distance: currentDistance.toFixed(1)
+    const directionsService = new google.maps.DirectionsService();
+    
+    const request = {
+      origin: selectedPickup.geometry.location,
+      destination: selectedDrop.geometry.location,
+      travelMode: 'DRIVING',
+      provideRouteAlternatives: false
     };
     
-    console.log("Sending booking data:", bookingData);
-    
-    // Make API call to backend
-    fetch('https://5c1dd34512a0.ngrok-free.app/submit_booking', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(bookingData)
-    })
-    .then(response => {
-        console.log("Response status:", response.status);
+    directionsService.route(request, function(result, status) {
+      // Hide loader when done
+      document.getElementById('loader').style.display = 'none';
+      
+      if (status === 'OK') {
+        directionsRenderer.setDirections(result);
         
-        if (!response.ok) {
-            // Try to get error message from response
-            return response.json().then(errorData => {
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-            }).catch(() => {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            });
+        // Get distance from the first route
+        const route = result.routes[0];
+        if (route.legs.length > 0) {
+          const distanceMeters = route.legs[0].distance.value;
+          currentDistance = distanceMeters / 1000; // Convert to kilometers
+          
+          // Update UI with distance
+          document.getElementById('distanceInfo').style.display = 'block';
+          document.getElementById('distance').textContent = currentDistance.toFixed(1);
+          
+          // Enable WhatsApp button
+          document.getElementById('whatsappBtn').disabled = false;
         }
-        return response.json();
-    })
-    .then(data => {
-        console.log("Response data:", data);
-        // Hide loader
-        document.getElementById('loader').style.display = 'none';
-        
-        if (data.status === "success") {
-            // Show confirmation
-            document.getElementById('confirmation').style.display = 'flex';
-        } else {
-            alert("Booking failed: " + (data.message || "Unknown error"));
-        }
-    })
-    .catch(error => {
-        console.error("Fetch error:", error);
-        document.getElementById('loader').style.display = 'none';
-        alert("Error submitting booking: " + error.message);
+      } else {
+        console.error('Directions request failed:', status);
+        alert('Could not calculate the route. Please try again.');
+      }
     });
+  } else {
+    // Hide distance info if locations are incomplete
+    document.getElementById('distanceInfo').style.display = 'none';
+    document.getElementById('whatsappBtn').disabled = true;
+  }
 }
+
+// Submit booking to backend
+function submitBooking() {
+  const pickup = document.getElementById("pickupInput").value;
+  const drop = document.getElementById("dropInput").value;
+  
+  if (!pickup || !drop) {
+    alert("Please enter both pickup and drop locations.");
+    return;
+  }
+  
+  if (currentDistance <= 0) {
+    alert("Could not calculate distance. Please try reselecting locations.");
+    return;
+  }
+  
+  // Show loader
+  document.getElementById('loader').style.display = 'flex';
+  
+  // Prepare booking data
+  const bookingData = {
+    user: userPhone,
+    pickup: pickup,
+    drop: drop,
+    distance: currentDistance.toFixed(1)
+  };
+  
+  console.log("Sending booking data:", bookingData);
+  
+  // Make API call to backend
+  fetch('https://5c1dd34512a0.ngrok-free.app/submit_booking', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(bookingData)
+  })
+  .then(response => {
+    console.log("Response status:", response.status);
     
-    // Initialize when page loads
-    window.onload = function() {
-      initAutocomplete();
-    };
+    if (!response.ok) {
+      // Try to get error message from response
+      return response.json().then(errorData => {
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }).catch(() => {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      });
+    }
+    return response.json();
+  })
+  .then(data => {
+    console.log("Response data:", data);
+    // Hide loader
+    document.getElementById('loader').style.display = 'none';
+    
+    if (data.status === "success") {
+      // Show confirmation
+      document.getElementById('confirmation').style.display = 'flex';
+    } else {
+      alert("Booking failed: " + (data.message || "Unknown error"));
+    }
+  })
+  .catch(error => {
+    console.error("Fetch error:", error);
+    document.getElementById('loader').style.display = 'none';
+    alert("Error submitting booking: " + error.message);
+  });
+}
+
+// Initialize when page loads
+window.onload = function() {
+  initAutocomplete();
+};
   </script>
 </body>
 </html>
