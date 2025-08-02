@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Taxi Booking Location Picker</title>
+  <title>Taxi Booking - Select Locations</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDLyQK5Mh-Y6DkfhLY9cjLyuDSzsi4vSjY&libraries=places"></script>
   <style>
@@ -15,7 +15,7 @@
     
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
       min-height: 100vh;
       padding: 20px;
       display: flex;
@@ -27,11 +27,11 @@
     .container {
       background: white;
       border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
       width: 100%;
       max-width: 500px;
       overflow: hidden;
-      margin-top: 20px;
+      position: relative;
     }
     
     .header {
@@ -45,6 +45,7 @@
     .header h2 {
       font-size: 1.8rem;
       margin-bottom: 5px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
     
     .header p {
@@ -57,6 +58,12 @@
       top: 20px;
       right: 20px;
       font-size: 2rem;
+      animation: bounce 2s infinite;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
     }
     
     .content {
@@ -178,11 +185,93 @@
       gap: 8px;
     }
     
+    .info-box ul {
+      padding-left: 20px;
+    }
+    
+    .info-box li {
+      margin-bottom: 8px;
+    }
+    
     .footer {
       text-align: center;
       margin-top: 30px;
       color: #718096;
       font-size: 0.9rem;
+    }
+    
+    .loader {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .loader-content {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+    }
+    
+    .spinner {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #25D366;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .confirmation {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .confirmation-content {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      max-width: 90%;
+      width: 400px;
+    }
+    
+    .confirmation-content i {
+      font-size: 4rem;
+      color: #25D366;
+      margin-bottom: 20px;
+    }
+    
+    .confirmation-content h2 {
+      margin-bottom: 15px;
+      color: #25D366;
+    }
+    
+    .confirmation-content p {
+      margin-bottom: 25px;
+      font-size: 1.1rem;
+      line-height: 1.6;
     }
     
     @media (max-width: 480px) {
@@ -211,13 +300,21 @@
       .btn {
         padding: 14px;
       }
+      
+      .map-container {
+        height: 200px;
+      }
+      
+      .confirmation-content {
+        padding: 20px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h2>Taxi Booking Location Picker</h2>
+      <h2><i class="fas fa-taxi"></i> Taxi Booking</h2>
       <p>Select your pickup and drop locations</p>
       <div class="taxi-icon">
         <i class="fas fa-taxi"></i>
@@ -241,8 +338,8 @@
         <input type="text" id="dropInput" class="location-input" placeholder="Enter drop location">
       </div>
       
-      <button class="btn" onclick="sendToWhatsApp()">
-        <i class="fab fa-whatsapp"></i> Send to WhatsApp
+      <button class="btn" id="submitBtn">
+        <i class="fas fa-paper-plane"></i> Confirm Booking
       </button>
       
       <div class="map-container">
@@ -251,20 +348,62 @@
       
       <div class="info-box">
         <h3><i class="fas fa-info-circle"></i> How it works</h3>
-        <p>1. Enter your pickup and drop locations</p>
-        <p>2. Locations will be shown on the map</p>
-        <p>3. Click "Send to WhatsApp" to book your taxi</p>
+        <ul>
+          <li>Enter your pickup and drop locations</li>
+          <li>Locations will be shown on the map</li>
+          <li>Click "Confirm Booking" to submit your request</li>
+          <li>We'll send a WhatsApp confirmation to your phone</li>
+        </ul>
       </div>
     </div>
+    
+    <div class="footer">
+      <p>© 2023 Taxi Booking Service. All rights reserved.</p>
+    </div>
   </div>
-  
-  <div class="footer">
-    <p>© 2023 Taxi Booking Service. All rights reserved.</p>
+
+  <div class="loader" id="loader">
+    <div class="loader-content">
+      <div class="spinner"></div>
+      <h3>Processing Your Booking...</h3>
+      <p>Sending details to our dispatch system</p>
+    </div>
+  </div>
+
+  <div class="confirmation" id="confirmation">
+    <div class="confirmation-content">
+      <i class="fas fa-check-circle"></i>
+      <h2>Booking Confirmed!</h2>
+      <p>Your taxi booking details have been successfully submitted.</p>
+      <p>We're sending a WhatsApp confirmation to your phone number now.</p>
+      <p>Your driver will contact you shortly.</p>
+      <button class="btn" onclick="document.getElementById('confirmation').style.display = 'none'">
+        <i class="fas fa-times"></i> Close
+      </button>
+    </div>
   </div>
 
   <script>
+    // Global variables to store place details
+    let selectedPickup = null;
+    let selectedDrop = null;
+    let map, pickupMarker, dropMarker, directionsRenderer;
+    let userPhone = "";
+    
+    // Get user phone from URL
+    function getUserFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('user');
+    }
+    
     // Initialize Google Maps Autocomplete
     function initAutocomplete() {
+      userPhone = getUserFromURL();
+      if (!userPhone) {
+        alert("User phone number is missing from URL. Please access via the correct link.");
+        return;
+      }
+      
       const pickupInput = document.getElementById('pickupInput');
       const dropInput = document.getElementById('dropInput');
       
@@ -272,15 +411,26 @@
       const dropAutocomplete = new google.maps.places.Autocomplete(dropInput);
       
       // Initialize map
-      const map = new google.maps.Map(document.getElementById('map'), {
+      map = new google.maps.Map(document.getElementById('map'), {
         center: {lat: 0, lng: 0},
         zoom: 2,
         mapTypeControl: false,
         streetViewControl: false
       });
       
+      // Initialize directions renderer
+      directionsRenderer = new google.maps.DirectionsRenderer({
+        map: map,
+        suppressMarkers: true,
+        polylineOptions: {
+          strokeColor: '#25D366',
+          strokeOpacity: 0.7,
+          strokeWeight: 5
+        }
+      });
+      
       // Add markers
-      const pickupMarker = new google.maps.Marker({
+      pickupMarker = new google.maps.Marker({
         map: map,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
@@ -292,7 +442,7 @@
         }
       });
       
-      const dropMarker = new google.maps.Marker({
+      dropMarker = new google.maps.Marker({
         map: map,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
@@ -309,6 +459,8 @@
         const place = pickupAutocomplete.getPlace();
         if (!place.geometry) return;
         
+        selectedPickup = place;
+        
         if (place.geometry.viewport) {
           map.fitBounds(place.geometry.viewport);
         } else {
@@ -324,6 +476,8 @@
         const place = dropAutocomplete.getPlace();
         if (!place.geometry) return;
         
+        selectedDrop = place;
+        
         if (place.geometry.viewport) {
           map.fitBounds(place.geometry.viewport);
         } else {
@@ -337,76 +491,114 @@
       
       // Switch locations
       document.getElementById('switchBtn').addEventListener('click', function() {
+        const pickupInput = document.getElementById('pickupInput');
+        const dropInput = document.getElementById('dropInput');
         const pickupValue = pickupInput.value;
         const dropValue = dropInput.value;
         
+        // Swap values
         pickupInput.value = dropValue;
         dropInput.value = pickupValue;
         
-        // Trigger place change events
-        if (pickupValue) {
-          const event = new Event('input', { bubbles: true });
-          pickupInput.dispatchEvent(event);
+        // Swap place objects
+        const tempPlace = selectedPickup;
+        selectedPickup = selectedDrop;
+        selectedDrop = tempPlace;
+        
+        // Update markers
+        if (selectedPickup) {
+          pickupMarker.setPosition(selectedPickup.geometry.location);
+        }
+        if (selectedDrop) {
+          dropMarker.setPosition(selectedDrop.geometry.location);
         }
         
-        if (dropValue) {
-          const event = new Event('input', { bubbles: true });
-          dropInput.dispatchEvent(event);
-        }
+        // Update route
+        updateRoute();
       });
       
-      // Update route on map
-      function updateRoute() {
-        const pickupPlace = pickupAutocomplete.getPlace();
-        const dropPlace = dropAutocomplete.getPlace();
+      // Submit button
+      document.getElementById('submitBtn').addEventListener('click', submitBooking);
+    }
+    
+    // Update route on map
+    function updateRoute() {
+      if (selectedPickup && selectedDrop) {
+        const directionsService = new google.maps.DirectionsService();
         
-        if (pickupPlace && pickupPlace.geometry && dropPlace && dropPlace.geometry) {
-          const directionsService = new google.maps.DirectionsService();
-          const directionsRenderer = new google.maps.DirectionsRenderer({
-            map: map,
-            suppressMarkers: true,
-            polylineOptions: {
-              strokeColor: '#25D366',
-              strokeOpacity: 0.7,
-              strokeWeight: 5
-            }
-          });
-          
-          const request = {
-            origin: pickupPlace.geometry.location,
-            destination: dropPlace.geometry.location,
-            travelMode: 'DRIVING'
-          };
-          
-          directionsService.route(request, function(result, status) {
-            if (status == 'OK') {
-              directionsRenderer.setDirections(result);
-            }
-          });
-        }
+        const request = {
+          origin: selectedPickup.geometry.location,
+          destination: selectedDrop.geometry.location,
+          travelMode: 'DRIVING'
+        };
+        
+        directionsService.route(request, function(result, status) {
+          if (status == 'OK') {
+            directionsRenderer.setDirections(result);
+          }
+        });
       }
     }
+    
+    // Submit booking to backend
+    function submitBooking() {
+    const pickup = document.getElementById("pickupInput").value;
+    const drop = document.getElementById("dropInput").value;
+    
+    if (!pickup || !drop) {
+        alert("Please enter both pickup and drop locations.");
+        return;
+    }
+    
+    // Show loader
+    document.getElementById('loader').style.display = 'flex';
+    
+    // Prepare booking data
+    const bookingData = {
+        user: userPhone,
+        pickup: pickup,
+        drop: drop,
+        pickup_coords: selectedPickup ? 
+            `${selectedPickup.geometry.location.lat()},${selectedPickup.geometry.location.lng()}` : "",
+        drop_coords: selectedDrop ? 
+            `${selectedDrop.geometry.location.lat()},${selectedDrop.geometry.location.lng()}` : ""
+    };
+    
+    // Make API call to backend
+    fetch('http://127.0.0.1:4040/submit_booking', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bookingData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Hide loader
+        document.getElementById('loader').style.display = 'none';
+        
+        if (data.status === "success") {
+            // Show confirmation
+            document.getElementById('confirmation').style.display = 'flex';
+        } else {
+            alert("Booking failed: " + (data.message || "Unknown error"));
+        }
+    })
+    .catch(error => {
+        document.getElementById('loader').style.display = 'none';
+        alert("Error submitting booking: " + error.message);
+    });
+}
     
     // Initialize when page loads
     window.onload = function() {
       initAutocomplete();
     };
-    
-    // Send to WhatsApp
-    function sendToWhatsApp() {
-      const pickup = document.getElementById("pickupInput").value;
-      const drop = document.getElementById("dropInput").value;
-      
-      if (!pickup || !drop) {
-        alert("Please enter both pickup and drop locations.");
-        return;
-      }
-      
-      const message = `Taxi Booking Request:%0A%0A🚕 *Pickup Location*:%0A${pickup}%0A%0A🏁 *Drop Location*:%0A${drop}%0A%0APlease confirm my booking. Thank you!`;
-      const whatsappURL = `https://wa.me/+14155238886?text=${message}`;
-      
-      window.open(whatsappURL, "_blank");
-    }
   </script>
 </body>
 </html>
